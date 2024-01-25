@@ -24,7 +24,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 #include <string.h>
 #include "w25q_spi.h"
 
@@ -101,6 +102,10 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  // Seed the random number generator
+  srand(time(NULL));
+
   while (1)
   {
     /* USER CODE END WHILE */
@@ -108,7 +113,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
     HAL_UART_Receive(&huart2,(uint8_t*)dt1,1,0x10);
 	  //command Info
-	  		if(dt1[0] == 'A')
+	  		if(dt1[0] == 'I')
 	  		{
 	  		W25_Read_Info((char*)&rx_buf);
 	        //05 - info
@@ -131,32 +136,39 @@ int main(void)
 	      else if(dt1[0] == 'C')
 	      {
 	        //07 - clear
-	        dt1[0] = 0x07;
-	        HAL_UART_Transmit(&huart2,(uint8_t*)dt1,1,0x1000);
-	        W25_Erase_Sector(1); //очищення сектора 1
-	        //W25_Erase_Block(5); очищення блока 5
-	        // W25_Erase_Chip(); // очищення чіпу
+	        // dt1[0] = 0x07;
+	        // HAL_UART_Transmit(&huart2,(uint8_t*)dt1,1,0x1000);
+	        // W25_Erase_Sector(1); //очищення сектора 1
+	        // W25_Erase_Block(5); // очищення блока 5
+          // Use HAL_UART_Transmit to send the string
+          HAL_UART_Transmit(&huart2, (uint8_t*)"Chip clean start!\r\n", strlen("Chip clean start!\r\n"), HAL_MAX_DELAY);
+	        W25_Erase_Chip(); // очищення чіпу
 	        dt1[0] = 0xEE;
-	        HAL_UART_Transmit(&huart2,(uint8_t*)dt1,1,0x1000);
-	        HAL_UART_Transmit(&huart2,(uint8_t*)dt1,1,0x1000);
+	        HAL_UART_Transmit(&huart2, (uint8_t*)"Chip clean finished\r\n", strlen("Chip clean finished\r\n"), HAL_MAX_DELAY);
 	      }
 	      //command Write
 	      else if(dt1[0] == 'W')
 	      {
-	        HAL_UART_Receive(&huart2,(uint8_t*)rx_buf,8,0x1000);
+	        // HAL_UART_Receive(&huart2,(uint8_t*)rx_buf,8,0x1000);
+
+          // Generate and store random unsigned integers
+          for (int i = 0; i < 256; ++i) {
+              rx_buf[i] = rand();
+          }
+
 	        pageCount = *(unsigned int*)(rx_buf);
 	        pageSize = *(unsigned int*)(rx_buf + 4);
 	        dt1[0] = 0xAA;
-	        HAL_UART_Transmit(&huart2,(uint8_t*)dt1,1,0x1000);
+	        // HAL_UART_Transmit(&huart2,(uint8_t*)dt1,1,0x1000);
 	        while(1)
 	        {
-	          HAL_UART_Receive(&huart2,(uint8_t*)rx_buf,4,0x1000);
+	          // HAL_UART_Receive(&huart2,(uint8_t*)rx_buf,4,0x1000);
 	          cur_page = *(unsigned int*)(rx_buf);
-	          HAL_UART_Receive(&huart2,(uint8_t*)rx_buf,pageSize,0x1000);
+	          // HAL_UART_Receive(&huart2,(uint8_t*)rx_buf,pageSize,0x1000);
 	          //HAL_Delay(10);
-	          W25_Write_Page(rx_buf, cur_page, 0, pageSize);
+	          W25_Write_Page(rx_buf, 0, 0, pageSize);
 	          dt1[0] = 0xEE;
-	          HAL_UART_Transmit(&huart2,(uint8_t*)dt1,1,0x1000);
+	          // HAL_UART_Transmit(&huart2,(uint8_t*)dt1,1,0x1000);
 	          if(cur_page >= (pageCount - 1)) break;
 	        }
 	      }
